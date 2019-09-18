@@ -9,8 +9,8 @@ import tensorflow_datasets as tfds
 def parse_args(desc): 
 	parser = argparse.ArgumentParser(description=desc)
 
-	parser.add_argument('--ds_name', type=str, help='Dataset name passed to tfds', default="uc_merced")
-	parser.add_argument('--res', type=int, help='Image Resolution', default=128)
+	parser.add_argument('--ds_name', type=str, help='Dataset name passed to tfds', default="imagenet2012")
+	parser.add_argument('--res', type=int, help='Image Resolution', default=224)
 	parser.add_argument('--batch_size', type=int, help='Batch Size', default=16)
 	parser.add_argument('--epochs', type=int, help='Training Epochs', default=1)
 

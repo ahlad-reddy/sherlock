@@ -12,20 +12,22 @@ from utils import parse_args, build_dataset, make_logdir
 
 
 class HardImageClassifier(keras.Model):
-	def __init__(self, image_shape, num_classes):
+	def __init__(self, classifier, fv_name, fc_name):
 		super(HardImageClassifier, self).__init__()
-		self.base_model = MobileNetV2(input_shape=image_shape, include_top=False, weights='imagenet')
+		self.base_model = keras.Model(inputs=classifier.input, 
+									  outputs=classifier.get_layer(fv_name).output)
 		self.base_model.trainable = False
-		self.pool = tf.keras.layers.GlobalAveragePooling2D()
-		self.dense_1 = keras.layers.Dense(num_classes)
-		self.dense_2 = keras.layers.Dense(1)
+		self.pool = keras.layers.GlobalAveragePooling2D()
+		self.fc1 = classifier.get_layer(fc_name)
+		self.fc1.trainable = False
+		self.fc2 = keras.layers.Dense(1)
 
 	def call(self, x):
 		x = self.base_model(x)
 		x = self.pool(x)
-		class_logits = self.dense_1(x)
-		hard_logits = self.dense_2(x)
-		return class_logits, hard_logits
+		class_pred = self.fc1(x)
+		hard_logits = self.fc2(x)
+		return class_pred, hard_logits
 
 
 def train(model, dataset, epochs):
@@ -41,8 +43,8 @@ def train(model, dataset, epochs):
 		for image_batch, label_batch in dataset:
 
 			with tf.GradientTape() as tape:
-				class_logits, hard_logits = model(image_batch)
-				hard_labels = label_batch.numpy() != np.argmax(class_logits, axis=-1)
+				class_pred, hard_logits = model(image_batch)
+				hard_labels = label_batch.numpy() != np.argmax(class_pred, axis=-1)
 				loss = loss_fn(y_true=hard_labels, y_pred=tf.squeeze(hard_logits))
 			grads = tape.gradient(loss, model.trainable_weights)
 			optimizer.apply_gradients(zip(grads, model.trainable_weights))
@@ -60,9 +62,9 @@ def evaluate(model, dataset):
 	pre = keras.metrics.Precision()
 
 	for image_batch, label_batch in dataset:
-		class_logits, hard_logits = model(image_batch)
+		class_pred, hard_logits = model(image_batch)
 		y_pred = tf.round(tf.nn.sigmoid(tf.squeeze(hard_logits)))
-		y_true = label_batch.numpy() != np.argmax(class_logits, axis=-1)
+		y_true = label_batch.numpy() != np.argmax(class_pred, axis=-1)
 		acc.update_state(y_true=y_true, y_pred=y_pred)
 		rec.update_state(y_true=y_true, y_pred=y_pred)
 		pre.update_state(y_true=y_true, y_pred=y_pred)
@@ -78,11 +80,14 @@ def main():
 
     # logdir = make_logdir('predict_hard_images-{}'.format(args.ds_name))
 
-	ds, info = build_dataset(ds_name=args.ds_name, split='train', res=args.res, batch_size=args.batch_size)
-	model = HardImageClassifier(image_shape=(args.res, args.res, 3), num_classes=info.features['label'].num_classes)
+	classifier = MobileNetV2()
+	model = HardImageClassifier(classifier=classifier, fv_name='out_relu', fc_name='Logits')
 
-	train(model, ds, args.epochs)
-	evaluate(model, ds)
+	ds_train, _ = build_dataset(ds_name=args.ds_name, split='train', res=args.res, batch_size=args.batch_size)
+	train(model, ds_train, args.epochs)
+
+	ds_test, _ = build_dataset(ds_name=args.ds_name, split='test', res=args.res, batch_size=args.batch_size)
+	evaluate(model, ds_test)
 	# keras.experimental.export_saved_model(model, os.path.join(logdir, 'model'))
 
 
