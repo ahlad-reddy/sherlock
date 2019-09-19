@@ -1,111 +1,32 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import tensorflow as tf 
-from tensorflow import keras
-import tensorflow_datasets as tfds
-from tensorflow.keras.applications import MobileNetV2
+import tensorflow_datasets as tfds 
+import time
 
-import numpy as np
 import streamlit as st
 
-from data import build_dataset
-from utils import make_logdir
-import argparse
+
+def build_dataset(name, split, res, batch_size):
+	ds, info = tfds.load(name=name, split=split, with_info=True)
+
+	def preprocess_input(data):
+		image = tf.dtypes.cast(data["image"], tf.float32)
+		image = image / 255.0
+		image = tf.image.resize_with_crop_or_pad(image, res, res)
+		label = data["label"]
+		return image, label
+
+	ds = ds.map(preprocess_input)
+	ds = ds.shuffle(2048).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+	return ds, info
 
 
-def parse_args(desc): 
-	parser = argparse.ArgumentParser(description=desc)
+ds, ds_test, _ = build_dataset('uc_merced', [tfds.Split.TRAIN.subsplit(tfds.percent[:10]), tfds.Split.TRAIN.subsplit(tfds.percent[10:])], 224, 1)
 
-	parser.add_argument('--ds_name', type=str, help='Dataset name passed to tfds', default="imagenet2012")
-	parser.add_argument('--res', type=int, help='Image Resolution', default=224)
-	parser.add_argument('--batch_size', type=int, help='Batch Size', default=16)
-	parser.add_argument('--epochs', type=int, help='Training Epochs', default=1)
-	parser.add_argument('--save', help='Save model', action='store_true')
+i = st.empty()
+l = st.empty()
 
-	args = parser.parse_args()
-	return args
-
-
-class HardImageClassifier(keras.Model):
-	def __init__(self, classifier, fv_name, fc_name):
-		super(HardImageClassifier, self).__init__()
-		self.base_model = keras.Model(inputs=classifier.input, 
-									  outputs=classifier.get_layer(fv_name).output)
-		self.base_model.trainable = False
-		self.pool = keras.layers.GlobalAveragePooling2D()
-		self.fc1 = classifier.get_layer(fc_name)
-		self.fc1.trainable = False
-		self.fc2 = keras.layers.Dense(1)
-
-	def call(self, x):
-		x = self.base_model(x)
-		x = self.pool(x)
-		class_pred = self.fc1(x)
-		hard_logits = self.fc2(x)
-		return class_pred, hard_logits
-
-
-def train(model, dataset, epochs):
-	optimizer = keras.optimizers.Adam(learning_rate=1e-3)
-	loss_fn = keras.losses.BinaryCrossentropy(from_logits=True)
-	losses = []
-
-	st.subheader("Training hard image predictor...")
-	progress = st.progress(0)
-	chart = st.empty()
-
-	for epoch in range(1, epochs+1):
-		for image_batch, label_batch in dataset:
-
-			with tf.GradientTape() as tape:
-				class_pred, hard_logits = model(image_batch)
-				hard_labels = label_batch.numpy() != np.argmax(class_pred, axis=-1)
-				loss = loss_fn(y_true=hard_labels, y_pred=tf.squeeze(hard_logits))
-			grads = tape.gradient(loss, model.trainable_weights)
-			optimizer.apply_gradients(zip(grads, model.trainable_weights))
-
-			losses.append(loss)
-			chart.line_chart(losses)
-
-		progress.progress(epoch*100//epochs)
-
-
-def evaluate(model, dataset):
-	st.subheader("Evaluating hard image predictor...")
-	acc = keras.metrics.Accuracy()
-	rec = keras.metrics.Recall()
-	pre = keras.metrics.Precision()
-
-	for image_batch, label_batch in dataset:
-		class_pred, hard_logits = model(image_batch)
-		y_pred = tf.round(tf.nn.sigmoid(tf.squeeze(hard_logits)))
-		y_true = label_batch.numpy() != np.argmax(class_pred, axis=-1)
-		acc.update_state(y_true=y_true, y_pred=y_pred)
-		rec.update_state(y_true=y_true, y_pred=y_pred)
-		pre.update_state(y_true=y_true, y_pred=y_pred)
-
-	st.write('Prediction Accuracy: {}'.format(acc.result().numpy()))
-	st.write('Prediction Recall: {}'.format(rec.result().numpy()))
-	st.write('Prediction Precision: {}'.format(pre.result().numpy()))
-
-
-def main():
-	desc = "Training a classifier to predict whether an image will be classified correctly or incorrectly"  
-	args = parse_args(desc)
-
-    # logdir = make_logdir('predict_hard_images-{}'.format(args.ds_name))
-
-	classifier = MobileNetV2()
-	model = HardImageClassifier(classifier=classifier, fv_name='out_relu', fc_name='Logits')
-
-	ds_train, _ = build_dataset(ds_name=args.ds_name, split='train', res=args.res, batch_size=args.batch_size)
-	train(model, ds_train, args.epochs)
-
-	ds_test, _ = build_dataset(ds_name=args.ds_name, split='test', res=args.res, batch_size=args.batch_size)
-	evaluate(model, ds_test)
-	# keras.experimental.export_saved_model(model, os.path.join(logdir, 'model'))
-
-
-if __name__ == '__main__':
-    main()
+for image, label in ds:
+	i.image(image.numpy(), width=512)
+	l.text(label)
+	time.sleep(1)
 
