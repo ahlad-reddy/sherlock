@@ -1,3 +1,5 @@
 venv
 logdir
 Sherlock/__pycache__
+data/raw/*
+data/preprocessed/*
