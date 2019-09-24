@@ -3,7 +3,6 @@ import glob
 import json
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-import streamlit as st
 
 
 def build_missouri_dataset(image_shape=(224, 224), rgb=True, rotate=False, batch_size=16):
@@ -28,14 +27,22 @@ def build_missouri_dataset(image_shape=(224, 224), rgb=True, rotate=False, batch
 		image = image / 255.0
 
 		if rotate:
-			label = tf.random.uniform((1,), minval=0, maxval=4, dtype=tf.dtypes.int32)[0]
-			image = tf.image.rot90(image, k=label)
+			image = tf.concat([tf.image.rot90(tf.expand_dims(image, axis=0), k=i) for i in range(4)], axis=0)
+			label = [0, 1, 2, 3]
 		else: 
 			label = data["label"]
 
 		return image, label
 
+	def rebatch(image, label):
+		image = tf.reshape(image, (4*batch_size, *image_shape, 3 if rgb else 1))
+		label = tf.reshape(label, (4*batch_size,))
+		return image, label
+
 	ds = ds.map(_parse_image_function)
 	ds = ds.map(preprocess_input)
 	ds = ds.shuffle(128).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+	if rotate:
+		ds = ds.map(rebatch)
 	return ds
+
