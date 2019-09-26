@@ -1,8 +1,13 @@
 import os
+import glob
 import json
 import tensorflow as tf
+from tensorflow.io import TFRecordWriter as Writer
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+tf.enable_eager_execution()
 from tqdm import tqdm
+import numpy as np
+np.random.seed(1000)
 
 
 def _bytes_feature(value):
@@ -19,13 +24,26 @@ def _int64_feature(value):
   """Returns an int64_list from a bool / enum / int / uint."""
   return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
+val_test_split = np.array([0.7, 0.85])
+train_seqs, val_seqs, test_seqs = [], [], []
+for folder in glob.glob("data/raw/Set1/*/"):
+	sequences = [os.path.basename(seq) for seq in glob.glob(os.path.join(folder, '*'))]
+	np.random.shuffle(sequences)
+	splits = (len(sequences) * val_test_split).astype('uint8')
+
+	train_seqs+=sequences[:splits[0]]
+	val_seqs+=sequences[splits[0]:splits[1]]
+	test_seqs+=sequences[splits[1]:]
+
 
 CROPPED_DIM = (1010, 1920)
 metadata = json.load(open('data/raw/missouri_camera_traps_set1.json'))
-record_file = 'data/preprocessed/missouri_camera_traps_set1.tfrecords'
+record_file = 'data/preprocessed/missouri_camera_traps_set1_{}.tfrecords'
+
+
 i = 0
 
-with tf.io.TFRecordWriter(record_file) as writer:
+with Writer(record_file.format("train")) as train_writer, Writer(record_file.format("val")) as val_writer, Writer(record_file.format("test")) as test_writer:
 	for meta in tqdm(metadata["images"]):
 		file = os.path.join('data/raw', meta["file_name"].replace('\\', '/'))
 		try:
@@ -45,7 +63,18 @@ with tf.io.TFRecordWriter(record_file) as writer:
 			}
 
 			tf_example = tf.train.Example(features=tf.train.Features(feature=feature))
-			writer.write(tf_example.SerializeToString())
+
+			if meta["seq_id"] in train_seqs:
+				w = train_writer
+			elif meta["seq_id"] in val_seqs:
+				w = val_writer
+			elif meta["seq_id"] in test_seqs:
+				w = test_writer
+			else:
+				print('seq_id not in seq lists')
+				raise
+			w.write(tf_example.SerializeToString())
+
 		except tf.errors.InvalidArgumentError as err:
 			print('Corrupted file, unable to process - {}'.format(file))
 

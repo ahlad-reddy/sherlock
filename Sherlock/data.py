@@ -5,8 +5,9 @@ import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
-def build_missouri_dataset(image_shape=(224, 224), rgb=True, rotate=False, batch_size=16):
-	record_file = 'data/preprocessed/missouri_camera_traps_set1.tfrecords'
+def build_missouri_dataset(split='train' ,image_shape=(224, 224), rgb=True, rotate=False, batch_size=16):
+	assert split in ['train', 'val', 'test', 'full']
+	record_file = 'data/preprocessed/missouri_camera_traps_set1_{}.tfrecords'.format(split)
 	ds = tf.data.TFRecordDataset(record_file)
 
 	image_feature_description = {
@@ -35,13 +36,13 @@ def build_missouri_dataset(image_shape=(224, 224), rgb=True, rotate=False, batch
 		return image, label
 
 	def rebatch(image, label):
-		image = tf.reshape(image, (4*batch_size, *image_shape, 3 if rgb else 1))
-		label = tf.reshape(label, (4*batch_size,))
+		image = tf.reshape(image, (-1, *image_shape, 3 if rgb else 1))
+		label = tf.reshape(label, (-1,))
 		return image, label
 
 	ds = ds.map(_parse_image_function)
 	ds = ds.map(preprocess_input)
-	ds = ds.shuffle(128).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+	ds = ds.shuffle(2048).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
 	if rotate:
 		ds = ds.map(rebatch)
 	return ds
