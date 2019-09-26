@@ -10,7 +10,7 @@ from tensorflow.keras.applications import MobileNetV2
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 import numpy as np
-from data import build_missouri_dataset
+from data import build_missouri_dataset, build_yelp_dataset
 from math import ceil
 
 
@@ -33,13 +33,13 @@ def main():
 
 	callbacks = None
 	if args.save:
-		logdir = 'logdir/{}_{:03d}'.format("missouri_camera_traps", len(glob.glob('logdir/*')))
+		logdir = 'logdir/{}_{:03d}'.format("yelp_photos", len(glob.glob('logdir/*')))
+		print('Saving to {}'.format(logdir))
 		callbacks = [keras.callbacks.ModelCheckpoint(os.path.join(logdir, 'mobilenetv2.h5')), 
 					 keras.callbacks.TensorBoard(log_dir=logdir)]
 
-	ds_train = build_missouri_dataset(split='train', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
-	ds_val = build_missouri_dataset(split='val', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
-	ds_test = build_missouri_dataset(split='test', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
+	ds_train, ds_val = build_yelp_dataset(splits=['train1'], image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, take=1000)
+	ds_test, _ = build_yelp_dataset(splits=['test'], image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, take=1000)
 
 	model = MobileNetV2(input_shape=(args.res, args.res, 3), classes=4, weights=None)
 
@@ -49,10 +49,10 @@ def main():
 
 	model.fit(ds_train, 
 			  epochs=args.epochs,
-			  steps_per_epoch=ceil(17190/args.batch_size), 
+			  steps_per_epoch=1000,
 			  callbacks=callbacks,
 			  validation_data=ds_val,
-			  validation_steps=ceil(3588/args.batch_size),
+			  validation_steps=1000,
 			  verbose=1)
 
 	model.evaluate(ds_test, callbacks=callbacks)
