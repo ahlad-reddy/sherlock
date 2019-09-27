@@ -18,10 +18,10 @@ def parse_args():
 	desc = "Unsupervised training using image rotations on missouri camera traps dataset" 
 	parser = argparse.ArgumentParser(description=desc)
 
-	parser.add_argument('--res', type=int, help='Image Resolution', default=224)
+	parser.add_argument('--res', type=int, help='Image Resolution', default=96)
 	parser.add_argument('--lr', type=float, help='Learning Rate', default=1e-3)
 	parser.add_argument('--batch_size', type=int, help='Batch Size', default=16)
-	parser.add_argument('--epochs', type=int, help='Training Epochs', default=30)
+	parser.add_argument('--epochs', type=int, help='Training Epochs', default=5)
 	parser.add_argument('--save', help='Save model', action='store_true')
 
 	args = parser.parse_args()
@@ -38,8 +38,9 @@ def main():
 		callbacks = [keras.callbacks.ModelCheckpoint(os.path.join(logdir, 'mobilenetv2.h5')), 
 					 keras.callbacks.TensorBoard(log_dir=logdir)]
 
-	ds_train, ds_val = build_yelp_dataset(splits=['train1'], image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, take=1000)
-	ds_test, _ = build_yelp_dataset(splits=['test'], image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, take=1000)
+	ds_train = build_yelp_dataset(splits=['train1'], image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
+	ds_val = build_yelp_dataset(splits=['train2'], image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
+	ds_test = build_yelp_dataset(splits=['test'], image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
 
 	model = MobileNetV2(input_shape=(args.res, args.res, 3), classes=4, weights=None)
 
@@ -47,17 +48,11 @@ def main():
 				  loss='sparse_categorical_crossentropy',
 				  metrics=['accuracy'])
 
-	model.fit(ds_train, 
-			  epochs=args.epochs,
-			  steps_per_epoch=1000,
-			  callbacks=callbacks,
-			  validation_data=ds_val,
-			  validation_steps=1000,
-			  verbose=1)
+	for i in range(args.epochs):
+		model.fit(ds_train, callbacks=callbacks)
+		model.evaluate(ds_val, callbacks=callbacks)
 
 	model.evaluate(ds_test, callbacks=callbacks)
-
-
 
 
 if __name__ == '__main__':

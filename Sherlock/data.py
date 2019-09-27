@@ -1,12 +1,11 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import os
-import glob
 import json
 import tensorflow as tf
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
-def build_yelp_dataset(splits=["train1"], image_shape=(224, 224), rotate=False, batch_size=16, take=None):
-	assert image_shape[0]==image_shape[1]
+def build_yelp_dataset(splits=["train1"], image_shape=(224, 224), rotate=False, batch_size=16):
 	record_file = "data/preprocessed/yelp_photos_{}.tfrecords"
 	ds = tf.data.TFRecordDataset([record_file.format(s) for s in splits])
 
@@ -43,12 +42,7 @@ def build_yelp_dataset(splits=["train1"], image_shape=(224, 224), rotate=False, 
 	if rotate:
 		ds = ds.map(_rebatch)
 
-	if take:
-		ds_train = ds.take(take)
-		ds_val = ds.skip(take)
-		return ds_train, ds_val
-	else:
-		return ds
+	return ds
 
 
 def build_missouri_dataset(split='train' , image_shape=(224, 224), rgb=True, rotate=False, batch_size=16):
