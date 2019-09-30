@@ -38,7 +38,7 @@ def build_yelp_dataset(splits=["train1"], image_shape=(224, 224), rotate=False, 
 
 	ds = ds.map(_parse_image_function)
 	ds = ds.map(_preprocess_input)
-	ds = ds.shuffle(2048).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+	ds = ds.shuffle(2048).batch(batch_size).repeat().prefetch(tf.data.experimental.AUTOTUNE)
 	if rotate:
 		ds = ds.map(_rebatch)
 

@@ -17,7 +17,7 @@ def parse_args():
 	desc = "Transfer learning on classification task" 
 	parser = argparse.ArgumentParser(description=desc)
 
-	parser.add_argument('--res', type=int, help='Image Resolution', default=96)
+	parser.add_argument('--res', type=int, help='Image Resolution', default=224)
 	parser.add_argument('--lr', type=float, help='Learning Rate', default=1e-3)
 	parser.add_argument('--batch_size', type=int, help='Batch Size', default=16)
 	parser.add_argument('--epochs', type=int, help='Training Epochs', default=1)
@@ -39,7 +39,7 @@ def main():
 					 keras.callbacks.TensorBoard(log_dir=logdir, update_freq=50)]
 
 	ds_train = build_yelp_dataset(splits=['train1'], image_shape=(args.res, args.res), rotate=False, batch_size=args.batch_size)
-	ds_val = build_yelp_dataset(splits=['train2'], image_shape=(args.res, args.res), rotate=False, batch_size=args.batch_size)
+	ds_val = build_yelp_dataset(splits=['test'], image_shape=(args.res, args.res), rotate=False, batch_size=args.batch_size)
 
 	if args.model in ['imagenet', None]:
 		base_model = MobileNetV2(input_shape=(args.res, args.res, 3), weights=args.model, classes=1000)
@@ -55,8 +55,28 @@ def main():
 				  loss='sparse_categorical_crossentropy',
 				  metrics=['accuracy'])
 
-	model.fit(ds_train, callbacks=callbacks)
-	model.evaluate(ds_val, callbacks=callbacks)
+	model.fit(ds_train, 
+			  epochs=args.epochs, 
+			  steps_per_epoch=2000,
+			  validation_data=ds_val,
+			  validation_steps=2500,
+			  callbacks=callbacks)
+
+	# for layer in model.layers[0].layers[100:]:
+	# 	layer.trainable = True
+
+	# model.compile(optimizer=keras.optimizers.Adam(learning_rate=args.lr//10),
+	# 		  loss='sparse_categorical_crossentropy',
+	# 		  metrics=['accuracy'])
+
+	# model.fit(ds_train, 
+	# 		  epochs=args.epochs, 
+	# 		  steps_per_epoch=2000,
+	# 		  validation_data=ds_val,
+	# 		  validation_steps=2500,
+	# 		  callbacks=callbacks)
+
+	# model.evaluate(ds_full, callbacks=callbacks, steps=125000)
 
 
 if __name__ == '__main__':

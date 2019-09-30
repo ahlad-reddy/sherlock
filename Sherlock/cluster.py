@@ -24,26 +24,26 @@ def parse_args():
 	desc = "Cluster a dataset and apply labels" 
 	parser = argparse.ArgumentParser(description=desc)
 
-	parser.add_argument('--load_features', type=str, help='Path to saved features', required=True)
-	parser.add_argument('--n_clusters', type=int, help='Number of Clusters', default=5)
+	parser.add_argument('--load_features', type=str, help='Path to saved features', default="logdir/yelp_photos_023/imagenet_fv.npy")
+	parser.add_argument('--n_clusters', type=int, help='Number of Clusters', default=20)
 
 	args = parser.parse_args()
 	return args
 
 
 def cluster(features, labels, n_clusters, n_classes):
-	kmeans = KMeans(n_clusters=n_clusters, max_iter=300, n_init=10, verbose=1, n_jobs=-1)
+	kmeans = KMeans(n_clusters=n_clusters)
 	kmeans.fit(features)
 
 	yticklabels = ['inside', 'outside', 'food', 'drink', 'menu']
 
-	pred = ward.labels_
+	pred = kmeans.labels_
 	true = labels
 	n_clusters = max(pred)
 	cm = confusion_matrix(true, pred)
 	fig, ax = plt.subplots(figsize=(10, 10))
 	sn.heatmap(cm, annot=False, cbar=True, ax=ax, yticklabels=yticklabels)
-	plt.xlim((0, n_clusters))
+	plt.xlim((0, n_clusters+1))
 	plt.ylim((0, n_classes))
 	st.pyplot()
 
