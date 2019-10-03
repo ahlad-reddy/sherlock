@@ -1,6 +1,5 @@
 import os
 import json
-import time
 from tqdm import tqdm
 import tensorflow as tf
 from tensorflow.io import TFRecordWriter
@@ -55,7 +54,8 @@ for i, split in enumerate(tqdm(['train1', 'train2', 'train3', 'train4', 'train5'
 
 			feature = {
 				'image': _bytes_feature(image_string.numpy()),
-				'label': _int64_feature(label)
+				'label': _int64_feature(label),
+				'photo_id': _bytes_feature(str.encode(datapoint["photo_id"]))
 			}
 			tf_example = tf.train.Example(features=tf.train.Features(feature=feature))
 			writer.write(tf_example.SerializeToString())

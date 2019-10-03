@@ -10,7 +10,7 @@ from tensorflow.keras.applications import MobileNetV2
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 import numpy as np
-from data import build_missouri_dataset, build_yelp_dataset
+from data import build_missouri_dataset, build_yelp_dataset, build_food101_dataset
 from math import ceil
 
 
@@ -33,14 +33,13 @@ def main():
 
 	callbacks = None
 	if args.save:
-		logdir = 'logdir/{}_{:03d}'.format("yelp_photos", len(glob.glob('logdir/*')))
+		logdir = 'logdir/{}_{:03d}'.format("food101", len(glob.glob('logdir/*')))
 		print('Saving to {}'.format(logdir))
 		callbacks = [keras.callbacks.ModelCheckpoint(os.path.join(logdir, 'mobilenetv2.h5')), 
 					 keras.callbacks.TensorBoard(log_dir=logdir)]
 
-	ds_train = build_yelp_dataset(splits=['train1', 'train2', 'train3', 'train4', 'train5'], image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
-	# ds_val = build_yelp_dataset(splits=['train2'], image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
-	ds_test = build_yelp_dataset(splits=['test'], image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
+	ds_train = build_food101_dataset(split='train', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, shuffle=True, epochs=args.epochs)
+	ds_test = build_yelp_dataset(splits='test', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, epochs=1)
 
 	model = MobileNetV2(input_shape=(args.res, args.res, 3), classes=4, weights=None)
 
@@ -49,14 +48,9 @@ def main():
 				  metrics=['accuracy'])
 
 
-	model.fit(ds_train, 
-			  epochs=args.epochs, 
-			  steps_per_epoch=10000, 
-			  # validation_data=ds_val, 
-			  # validation_steps=2000, 
-			  callbacks=callbacks)
+	model.fit(ds_train, callbacks=callbacks)
 
-	model.evaluate(ds_test, callbacks=callbacks, steps=2500)
+	model.evaluate(ds_test, callbacks=callbacks)
 
 
 if __name__ == '__main__':
