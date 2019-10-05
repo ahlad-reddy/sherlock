@@ -35,6 +35,7 @@ def build_dataframe():
 
 	df = pd.read_csv(data_file, names=["str_label", "id"], sep="/")
 	df["image_path"] = df[['str_label', 'id']].apply(lambda x: os.path.join(data_dir, 'images/{}/{}.jpg'.format(x[0],x[1])), axis=1)
+	df["assigned_label"] = ""
 	return df
 
 

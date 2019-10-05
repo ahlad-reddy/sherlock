@@ -22,6 +22,7 @@ def parse_args():
 	parser.add_argument('--lr', type=float, help='Learning Rate', default=1e-3)
 	parser.add_argument('--batch_size', type=int, help='Batch Size', default=16)
 	parser.add_argument('--epochs', type=int, help='Training Epochs', default=5)
+	parser.add_argument('--model', type=str, help='Path to pretrained model or "imagenet"', default=None)
 	parser.add_argument('--save', help='Save model', action='store_true')
 
 	args = parser.parse_args()
@@ -38,19 +39,27 @@ def main():
 		callbacks = [keras.callbacks.ModelCheckpoint(os.path.join(logdir, 'mobilenetv2.h5')), 
 					 keras.callbacks.TensorBoard(log_dir=logdir)]
 
-	ds_train = build_food101_dataset(split='train', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, shuffle=True, epochs=args.epochs)
-	ds_test = build_yelp_dataset(splits='test', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, epochs=1)
+	ds_train, len_train = build_food101_dataset(split='train', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, shuffle=True)
+	ds_test, len_test = build_food101_dataset(split='test', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, epochs=1)
 
-	model = MobileNetV2(input_shape=(args.res, args.res, 3), classes=4, weights=None)
+	if args.model == 'imagenet':
+		_model = MobileNetV2(input_shape=(args.res, args.res, 3), include_top=False, weights=args.model)
+		model = keras.Sequential([
+			_model, 
+			keras.layers.GlobalAveragePooling2D(),
+			keras.layers.Dense(4, activation='softmax')
+		])
+	else:
+		model = MobileNetV2(input_shape=(args.res, args.res, 3), classes=4, weights=args.model)
 
 	model.compile(optimizer=keras.optimizers.Adam(learning_rate=args.lr),
 				  loss='sparse_categorical_crossentropy',
 				  metrics=['accuracy'])
 
 
-	model.fit(ds_train, callbacks=callbacks)
+	model.fit(ds_train, callbacks=callbacks, epochs=args.epochs, steps_per_epoch=len_train)
 
-	model.evaluate(ds_test, callbacks=callbacks)
+	model.evaluate(ds_test, callbacks=callbacks, steps=len_test)
 
 
 if __name__ == '__main__':
