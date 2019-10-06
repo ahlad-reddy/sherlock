@@ -1,4 +1,4 @@
-# Insight_Project_Framework
+# Sherlock: Semi-supervised Image Labeling
 Framework for machine learning projects at Insight Data Science.
 
 ## Motivation for this project format:
@@ -68,6 +68,15 @@ pip install -r requiremnts
 
 # Step 1
 # Step 2
+```
+
+## Downloading Data
+
+To download the Food 101 dataset, use the following command.
+
+```shell
+wget -c -P data/raw/ http://data.vision.ee.ethz.ch/cvl/food-101.tar.gz
+tar -zxvf data/raw/food-101.tar.gz
 ```
 
 ## Configs

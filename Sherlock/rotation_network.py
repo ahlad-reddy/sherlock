@@ -11,6 +11,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 import numpy as np
 from data import build_missouri_dataset, build_yelp_dataset, build_food101_dataset
+from model import build_rotation_model
 from math import ceil
 
 
@@ -42,15 +43,7 @@ def main():
 	ds_train, len_train = build_food101_dataset(split='train', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, shuffle=True)
 	ds_test, len_test = build_food101_dataset(split='test', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size, epochs=1)
 
-	if args.model == 'imagenet':
-		_model = MobileNetV2(input_shape=(args.res, args.res, 3), include_top=False, weights=args.model)
-		model = keras.Sequential([
-			_model, 
-			keras.layers.GlobalAveragePooling2D(),
-			keras.layers.Dense(4, activation='softmax')
-		])
-	else:
-		model = MobileNetV2(input_shape=(args.res, args.res, 3), classes=4, weights=args.model)
+	model = build_rotation_model(weights=args.model)
 
 	model.compile(optimizer=keras.optimizers.Adam(learning_rate=args.lr),
 				  loss='sparse_categorical_crossentropy',

@@ -10,6 +10,7 @@ from tensorflow.keras.applications import MobileNetV2
 
 import numpy as np
 from data import build_missouri_dataset, build_yelp_dataset, build_food101_dataset
+from model import build_classifier_model
 from math import ceil
 
 
@@ -22,6 +23,7 @@ def parse_args():
 	parser.add_argument('--batch_size', type=int, help='Batch Size', default=16)
 	parser.add_argument('--epochs', type=int, help='Training Epochs', default=1)
 	parser.add_argument('--model', type=str, help='Path to pretrained model or "imagenet"', default=None)
+	parser.add_argument('--transfer', type=bool, help='Transfer weights from model', default=True)
 	parser.add_argument('--take', type=float, help='Fraction of dataset used to train', default=0.1)
 	parser.add_argument('--save', help='Save model', action='store_true')
 
@@ -42,14 +44,7 @@ def main():
 	ds_train, train_len = build_food101_dataset(split='train', image_shape=(args.res, args.res), rotate=False, batch_size=args.batch_size, take=args.take)
 	ds_test, test_len = build_food101_dataset(split='test', image_shape=(args.res, args.res), rotate=False, batch_size=args.batch_size)
 
-	if args.model in ['imagenet', None]:
-		base_model = MobileNetV2(input_shape=(args.res, args.res, 3), weights=args.model, classes=1000)
-	else:
-		base_model = MobileNetV2(input_shape=(args.res, args.res, 3), weights=args.model, classes=4)
-	# base_model.trainable = False
-	
-	_model = keras.Model(inputs=base_model.inputs, outputs=base_model.layers[-2].output)
-	model = keras.Sequential([_model, keras.layers.Dense(101, activation='softmax')])
+	model = build_classifier_model(weights=args.model, transfer=args.transfer, classes=101)
 
 	model.compile(optimizer=keras.optimizers.Adam(learning_rate=args.lr),
 				  loss='sparse_categorical_crossentropy',
