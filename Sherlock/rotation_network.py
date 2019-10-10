@@ -6,12 +6,10 @@ import argparse
 
 import tensorflow as tf 
 from tensorflow import keras
-from tensorflow.keras.applications import MobileNetV2
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-import numpy as np
-from data import build_missouri_dataset
-from math import ceil
+from data import build_yelp_dataset, build_food101_dataset
+from model import build_model
 
 
 def parse_args(): 
@@ -19,9 +17,10 @@ def parse_args():
 	parser = argparse.ArgumentParser(description=desc)
 
 	parser.add_argument('--res', type=int, help='Image Resolution', default=224)
-	parser.add_argument('--lr', type=float, help='Learning Rate', default=1e-3)
+	parser.add_argument('--lr', type=float, help='Learning Rate', default=1e-4)
 	parser.add_argument('--batch_size', type=int, help='Batch Size', default=16)
-	parser.add_argument('--epochs', type=int, help='Training Epochs', default=30)
+	parser.add_argument('--epochs', type=int, help='Training Epochs', default=10)
+	parser.add_argument('--model', type=str, help='Path to pretrained model or "imagenet"', default=None)
 	parser.add_argument('--save', help='Save model', action='store_true')
 
 	args = parser.parse_args()
@@ -33,31 +32,24 @@ def main():
 
 	callbacks = None
 	if args.save:
-		logdir = 'logdir/{}_{:03d}'.format("missouri_camera_traps", len(glob.glob('logdir/*')))
-		callbacks = [keras.callbacks.ModelCheckpoint(os.path.join(logdir, 'mobilenetv2.h5')), 
+		logdir = 'logdir/{}_{:03d}'.format("food101", len(glob.glob('logdir/*')))
+		print('Saving to {}'.format(logdir))
+		save_path = os.path.join(logdir, 'mobilenetv2.h5')
+		callbacks = [keras.callbacks.ModelCheckpoint(save_path), 
 					 keras.callbacks.TensorBoard(log_dir=logdir)]
 
-	ds_train = build_missouri_dataset(split='train', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
-	ds_val = build_missouri_dataset(split='val', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
-	ds_test = build_missouri_dataset(split='test', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
+	ds_train, info = build_food101_dataset(split='train', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
+	ds_test, info = build_food101_dataset(split='test', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
 
-	model = MobileNetV2(input_shape=(args.res, args.res, 3), classes=4, weights=None)
+	model = build_model(base_weights=args.model, classes=4, input_shape=(args.res, args.res, 3))
 
 	model.compile(optimizer=keras.optimizers.Adam(learning_rate=args.lr),
 				  loss='sparse_categorical_crossentropy',
 				  metrics=['accuracy'])
 
-	model.fit(ds_train, 
-			  epochs=args.epochs,
-			  steps_per_epoch=ceil(17190/args.batch_size), 
-			  callbacks=callbacks,
-			  validation_data=ds_val,
-			  validation_steps=ceil(3588/args.batch_size),
-			  verbose=1)
+	model.fit(ds_train, callbacks=callbacks, epochs=args.epochs, steps_per_epoch=info["length"])
 
-	model.evaluate(ds_test, callbacks=callbacks)
-
-
+	base_model.save(save_path)
 
 
 if __name__ == '__main__':

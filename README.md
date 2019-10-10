@@ -1,80 +1,38 @@
-# Insight_Project_Framework
-Framework for machine learning projects at Insight Data Science.
+# Sherlock: Semi-supervised Image Labeling
+Sherlock is a set of tools that leverage unsupervised learning techniques to make image labeling more efficient. Currently it contains an implementation pipeline of [RotNet](https://arxiv.org/pdf/1803.07728.pdf) as well as an interface that utilizes K-Means to cluster and visualize images for batch labeling of data. 
 
-## Motivation for this project format:
-- **Insight_Project_Framework** : Put all source code for production within structured directory
-- **tests** : Put all source code for testing in an easy to find location
-- **configs** : Enable modification of all preset variables within single directory (consisting of one or many config files for separate tasks)
-- **data** : Include example a small amount of data in the Github repository so tests can be run to validate installation
-- **build** : Include scripts that automate building of a standalone environment
-- **static** : Any images or content to include in the README or web framework if part of the pipeline
+The presentation slides to the project are available [here](bit.ly/sherlock-ml).
 
-## Setup
-Clone repository and update python path
-```
-repo_name=Insight_Project_Framework # URL of your new repository
-username=mrubash1 # Username for your personal github account
-git clone https://github.com/$username/$repo_name
-cd $repo_name
-echo "export $repo_name=${PWD}" >> ~/.bash_profile
-echo "export PYTHONPATH=$repo_name/src:${PYTHONPATH}" >> ~/.bash_profile
-source ~/.bash_profile
-```
-Create new development branch and switch onto it
-```
-branch_name=dev-readme_requisites-20180905 # Name of development branch, of the form 'dev-feature_name-date_of_creation'}}
-git checkout -b $branch_name
-```
+## Prerequisites
 
-## Initial Commit
-Lets start with a blank slate: remove `.git` and re initialize the repo
-```
-cd $repo_name
-rm -rf .git   
-git init   
-git status
-```  
-You'll see a list of file, these are files that git doesn't recognize. At this point, feel free to change the directory names to match your project. i.e. change the parent directory Insight_Project_Framework and the project directory Insight_Project_Framework:
-Now commit these:
-```
-git add .
-git commit -m "Initial commit"
-git push origin $branch_name
-```
-
-## Requisites
-
-- List all packages and software needed to build the environment
-- This could include cloud command line tools (i.e. gsutil), package managers (i.e. conda), etc.
+- Python 3.6
+- NVIDIA GPU (Recommended)
 
 #### Dependencies
 
-- [Streamlit](streamlit.io)
+- Tensorflow 1.14
+- Numpy
+- Pandas
+- Scikit-learn
+- Pillow
+- Streamlit
 
 #### Installation
-To install the package above, pleae run:
+To get started, first clone the repository and install the dependencies. It is recommended to use a virtual environment, or an AWS instance built with the Deep Learning AMI.
 ```shell
-pip install -r requiremnts
+git clone https://github.com/ahlad-reddy/sherlock
+cd sherlock
+pip install -r requirements.txt
 ```
 
-## Build Environment
-- Include instructions of how to launch scripts in the build subfolder
-- Build scripts can include shell scripts or python setup.py files
-- The purpose of these scripts is to build a standalone environment, for running the code in this repository
-- The environment can be for local use, or for use in a cloud environment
-- If using for a cloud environment, commands could include CLI tools from a cloud provider (i.e. gsutil from Google Cloud Platform)
+## Downloading Data
+
+To download the Food 101 dataset, use the following command.
+
+```shell
+wget -c -P data/raw/ http://data.vision.ee.ethz.ch/cvl/food-101.tar.gz
+tar -zxvf data/raw/food-101.tar.gz
 ```
-# Example
-
-# Step 1
-# Step 2
-```
-
-## Configs
-- We recommond using either .yaml or .txt for your config files, not .json
-- **DO NOT STORE CREDENTIALS IN THE CONFIG DIRECTORY!!**
-- If credentials are needed, use environment variables or HashiCorp's [Vault](https://www.vaultproject.io/)
-
 
 ## Test
 - Include instructions for how to run all tests after the software is installed
