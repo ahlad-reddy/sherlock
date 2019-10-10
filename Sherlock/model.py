@@ -3,25 +3,13 @@ from tensorflow import keras
 from tensorflow.keras.applications import MobileNetV2
 
 
-def build_rotation_model(weights):
-	_weights = "imagenet" if weights == 'imagenet' else None
-	_model = MobileNetV2(include_top=False, weights=_weights)
-	model = keras.Sequential([
-		_model, 
-		keras.layers.GlobalAveragePooling2D(),
-		keras.layers.Dense(4, activation='softmax')
-	])
-	if weights not in ["imagenet", None]:
-		model.load_weights(weights)
-	return model
-
-
-def build_classifier_model(weights, transfer=True, classes):
-	_model = build_rotation_model(weights if transfer else None)
-	model = keras.Sequential([
-		keras.Model(inputs=_model.inputs, outputs=_model.layers[-2].output),
-		keras.layers.Dense(classes, activation='softmax')
-	])
-	if transfer==False:
-		model.load_weights(weights)
+def build_model(classes, input_shape, base_weights, full_weights=None):
+	base_model = MobileNetV2(include_top=False, weights=base_weights, input_shape=input_shape)
+	model = keras.Sequential()
+	model.add(base_model)
+	model.add(keras.layers.GlobalAveragePooling2D())
+	if classes != None:
+		model.add(keras.layers.Dense(classes, activation='softmax'))
+	if full_weights:
+		model.load_weights(full_weights)
 	return model

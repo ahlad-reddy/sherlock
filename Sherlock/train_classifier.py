@@ -44,7 +44,20 @@ def main():
 	ds_train, train_len = build_food101_dataset(split='train', image_shape=(args.res, args.res), rotate=False, batch_size=args.batch_size, take=args.take)
 	ds_test, test_len = build_food101_dataset(split='test', image_shape=(args.res, args.res), rotate=False, batch_size=args.batch_size)
 
+<<<<<<< Updated upstream
 	model = build_classifier_model(weights=args.model, transfer=args.transfer, classes=101)
+=======
+	
+	model = keras.Sequential([
+		MobileNetV2(input_shape=(args.res, args.res, 3), include_top=False, weights=args.model), 
+		keras.layers.GlobalAveragePooling2D(),
+		keras.layers.Dense(101, activation='softmax')
+	])
+	# base_model.trainable = False
+	
+	# _model = keras.Model(inputs=base_model.inputs, outputs=base_model.layers[-2].output)
+	# model = keras.Sequential([_model, keras.layers.Dense(101, activation='softmax')])
+>>>>>>> Stashed changes
 
 	model.compile(optimizer=keras.optimizers.Adam(learning_rate=args.lr),
 				  loss='sparse_categorical_crossentropy',
