@@ -1,5 +1,5 @@
 # Sherlock: Semi-supervised Image Labeling
-Sherlock is a set of tools that leverage unsupervised learning techniques to make image labeling more efficient. Currently it contains an implementation pipeline of [RotNet](https://arxiv.org/pdf/1803.07728.pdf) as well as an interface that utilizes K-Means to cluster and visualize images for batch labeling of data. 
+Sherlock is a set of tools that leverage unsupervised learning techniques to make image labeling more efficient. Currently it contains an implementation pipeline of [RotNet](https://arxiv.org/pdf/1803.07728.pdf) as well as an interface that utilizes K-Means to cluster and visualize images for batch labeling of data. The experiments for this project were done primarily with the Food 101 dataset and Yelp photos dataset (installation instructions below).
 
 The presentation slides to the project are available [here](bit.ly/sherlock-ml).
 
@@ -27,58 +27,45 @@ pip install -r requirements.txt
 
 ## Downloading Data
 
-To download the Food 101 dataset, use the following command.
+The following commands will download and untar the [Food 101](https://www.vision.ee.ethz.ch/datasets_extra/food-101/)
 
 ```shell
 wget -c -P data/raw/ http://data.vision.ee.ethz.ch/cvl/food-101.tar.gz
 tar -zxvf data/raw/food-101.tar.gz
 ```
 
-## Test
-- Include instructions for how to run all tests after the software is installed
-```
-# Example
+The Yelp Photos dataset can be downloaded from this [link](https://www.yelp.com/dataset/download) after accepting the terms of use. 
 
-# Step 1
-# Step 2
-```
+## Rotation Pre-Training
+To train a model on the unsupervised rotation training, run the following:
 
-## Run Inference
-- Include instructions on how to run inference
-- i.e. image classification on a single image for a CNN deep learning project
-```
-# Example
-
-# Step 1
-# Step 2
+```shell
+python Sherlock/rotation_network.py \
+	--res 224 \
+	--lr 0.0001 \
+	--batch_size 16 \
+	--epochs 10 \
+	--model None \
+	--save
 ```
 
-## Build Model
-- Include instructions of how to build the model
-- This can be done either locally or on the cloud
-```
-# Example
+## Labeling Interface
+To run the labeling interface, features and clusters must first be precomputed. Features and clusters will be saved in a JSON file that can then be loaded by the Streamlit application. To run the script enter:
 
-# Step 1
-# Step 2
-```
-
-## Serve Model
-- Include instructions of how to set up a REST or RPC endpoint
-- This is for running remote inference via a custom model
-```
-# Example
-
-# Step 1
-# Step 2
+```shell
+python Sherlock/cluster.py \
+	--res 224 \
+	--model path/to/model \
+	--save_path save/directory \
+	--n_clusters 200 \
+	--n_datapoints 5000 \
+	--seed 2019
 ```
 
-## Analysis
-- Include some form of EDA (exploratory data analysis)
-- And/or include benchmarking of the model and results
-```
-# Example
+Once the clusters have been calculated, you can run the Streamlit app.
 
-# Step 1
-# Step 2
+```shell
+streamlit run Sherlock/demo.py
 ```
+
+Additional instructinos to use the interface can be found in the application.
