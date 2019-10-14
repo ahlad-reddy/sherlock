@@ -57,7 +57,7 @@ def build_food101_dataset(split="train", image_shape=(224, 224), rotate=False, b
 
 	assert 0 < take <= 1
 	take = round(len(df)*take)
-	info["length"] = ceil(take/batch_size)
+	info = {"length": ceil(take/batch_size)}
 
 	if shuffle:
 		df = df.sample(frac=1).reset_index(drop=True)
@@ -67,20 +67,19 @@ def build_food101_dataset(split="train", image_shape=(224, 224), rotate=False, b
 	return ds, info
 
 
-def build_yelp_dataset(splits=["train1"], image_shape=(224, 224), rotate=False, batch_size=16, epochs=None, shuffle=True):
-	record_file = "data/preprocessed/yelp_photos_{}.tfrecords"
-	ds = tf.data.TFRecordDataset([record_file.format(s) for s in splits])
+def build_yelp_dataset(split="train", image_shape=(224, 224), rotate=False, batch_size=16, epochs=None, shuffle=True, take=1):
+	data_file = "data/preprocessed/yelp_photos_{}.json".format(split)
 
-	image_feature_description = {
-	    'image': tf.io.FixedLenFeature([], tf.string),
-		'label': tf.io.FixedLenFeature([], tf.int64),
-		'photo_id': tf.io.FixedLenFeature([], tf.string)
-	}
-	def _parse_image_function(example_proto):
-		# Parse the input tf.Example proto using the dictionary above.
-		return tf.io.parse_single_example(example_proto, image_feature_description)
+	df = pd.read_json(data_file)
+	
+	assert 0 < take <= 1
+	take = round(len(df)*take)
+	info = {"length": ceil(take/batch_size)}
 
-	ds = ds.map(_parse_image_function)
+	if shuffle:
+		df = df.sample(frac=1).reset_index(drop=True)
+
+	ds = tf.data.Dataset.from_tensor_slices(dict(df[["image_path", "label"]]))
 	ds = build_dataset(ds, image_shape, rotate, batch_size, epochs, shuffle, take)
 
 	return ds, info

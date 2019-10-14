@@ -32,24 +32,24 @@ def main():
 
 	callbacks = None
 	if args.save:
-		logdir = 'logdir/{}_{:03d}'.format("food101", len(glob.glob('logdir/*')))
+		logdir = 'logdir/{}_{:03d}'.format("yelp_photos", len(glob.glob('logdir/*')))
 		print('Saving to {}'.format(logdir))
-		save_path = os.path.join(logdir, 'mobilenetv2.h5')
-		callbacks = [keras.callbacks.ModelCheckpoint(save_path), 
+		callbacks = [keras.callbacks.ModelCheckpoint(os.path.join(logdir, 'mobilenetv2.h5')), 
 					 keras.callbacks.TensorBoard(log_dir=logdir)]
 
-	ds_train, info = build_food101_dataset(split='train', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
-	ds_test, info = build_food101_dataset(split='test', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
+	ds_train, train_info = build_yelp_dataset(split='train', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
+	ds_test, test_info = build_yelp_dataset(split='test', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
 
-	model = build_model(base_weights=args.model, classes=4, input_shape=(args.res, args.res, 3))
+	model = build_model(base_weights=None, classes=4, input_shape=(args.res, args.res, 3), full_weights=args.model)
 
 	model.compile(optimizer=keras.optimizers.Adam(learning_rate=args.lr),
 				  loss='sparse_categorical_crossentropy',
 				  metrics=['accuracy'])
 
-	model.fit(ds_train, callbacks=callbacks, epochs=args.epochs, steps_per_epoch=info["length"])
+	model.fit(ds_train, callbacks=callbacks, epochs=args.epochs, steps_per_epoch=train_info["length"], validation_data=ds_test, validation_steps=test_info["length"])
 
-	base_model.save(save_path)
+	if args.save:
+		model.layers[0].save(os.path.join(logdir, 'mobilenetv2_base.h5'))
 
 
 if __name__ == '__main__':
