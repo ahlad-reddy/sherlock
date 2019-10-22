@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow import keras
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-from data import build_yelp_dataset, build_food101_dataset
+from data import build_yelp_dataset
 from model import build_model
 
 
@@ -20,7 +20,8 @@ def parse_args():
 	parser.add_argument('--lr', type=float, help='Learning Rate', default=1e-4)
 	parser.add_argument('--batch_size', type=int, help='Batch Size', default=16)
 	parser.add_argument('--epochs', type=int, help='Training Epochs', default=10)
-	parser.add_argument('--model', type=str, help='Path to pretrained model or "imagenet"', default=None)
+	parser.add_argument('--full_model', type=str, help='Path to pretrained model or "imagenet"', default=None)
+	parser.add_argument('--base_model', type=str, help='Path to pretrained model or "imagenet"', default=None)
 	parser.add_argument('--save', help='Save model', action='store_true')
 
 	args = parser.parse_args()
@@ -40,7 +41,7 @@ def main():
 	ds_train, train_info = build_yelp_dataset(split='train', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
 	ds_test, test_info = build_yelp_dataset(split='test', image_shape=(args.res, args.res), rotate=True, batch_size=args.batch_size)
 
-	model = build_model(base_weights=None, classes=4, input_shape=(args.res, args.res, 3), full_weights=args.model)
+	model = build_model(base_weights=args.base_model, classes=train_info["classes"], input_shape=(args.res, args.res, 3), full_weights=args.full_model)
 
 	model.compile(optimizer=keras.optimizers.Adam(learning_rate=args.lr),
 				  loss='sparse_categorical_crossentropy',

@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from sklearn.cluster import KMeans, MiniBatchKMeans
-from sklearn.metrics import confusion_matrix
 
 
 def parse_args(): 
@@ -19,7 +18,7 @@ def parse_args():
 	parser.add_argument('--res', type=int, help='Image Resolution', default=224)
 	parser.add_argument('--model', type=str, help='Path to saved features', default="imagenet")
 	parser.add_argument('--save_path', type=str, help='Path to save json file')
-	parser.add_argument('--n_clusters', type=int, help='Number of Clusters', default=20)
+	parser.add_argument('--n_clusters', type=int, help='Number of Clusters', default=100)
 	parser.add_argument('--n_datapoints', type=int, help='Number of datapoints to use', default=5000)
 	parser.add_argument('--seed', type=int, help='Random Seed', default=2019)
 
@@ -28,12 +27,9 @@ def parse_args():
 
 
 def build_dataframe():
-	data_dir = "data/raw/food-101/"
-	data_file = os.path.join(data_dir, "meta/train.txt")
-	labels_file = os.path.join(data_dir, "meta/classes.txt")
+	data_file = "data/preprocessed/yelp_photos_train.json"
 
-	df = pd.read_csv(data_file, names=["str_label", "id"], sep="/")
-	df["image_path"] = df[['str_label', 'id']].apply(lambda x: os.path.join(data_dir, 'images/{}/{}.jpg'.format(x[0],x[1])), axis=1)
+	df = pd.read_json(data_file)
 	df["assigned_label"] = ""
 	return df
 

@@ -3,4 +3,5 @@ logdir
 Sherlock/__pycache__
 data/raw/*
 data/preprocessed/*
+data/processed/*
 nohup.out

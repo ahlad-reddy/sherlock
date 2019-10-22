@@ -1,5 +1,5 @@
 # Sherlock: Semi-supervised Image Labeling
-Sherlock is a set of tools that leverage unsupervised learning techniques to make image labeling more efficient. Currently it contains an implementation pipeline of [RotNet](https://arxiv.org/pdf/1803.07728.pdf) as well as an interface that utilizes K-Means to cluster and visualize images for batch labeling of data. The experiments for this project were done primarily with the Food 101 dataset and Yelp photos dataset (installation instructions below).
+Sherlock is a set of tools that leverage unsupervised learning techniques to make image labeling more efficient. Currently it contains an implementation pipeline of [RotNet](https://arxiv.org/pdf/1803.07728.pdf) as well as an interface that utilizes K-Means to cluster and visualize images for batch labeling of data. The experiments for this project were done primarily with the Yelp photos dataset (installation instructions below).
 
 The presentation slides to the project are available [here](bit.ly/sherlock-ml).
 
@@ -26,13 +26,6 @@ pip install -r requirements.txt
 ```
 
 ## Downloading Data
-
-The following commands will download and untar the [Food 101](https://www.vision.ee.ethz.ch/datasets_extra/food-101/)
-
-```shell
-wget -c -P data/raw/ http://data.vision.ee.ethz.ch/cvl/food-101.tar.gz
-tar -zxvf data/raw/food-101.tar.gz
-```
 
 The Yelp Photos dataset can be downloaded from this [link](https://www.yelp.com/dataset/download) after accepting the terms of use. 
 
@@ -68,4 +61,4 @@ Once the clusters have been calculated, you can run the Streamlit app.
 streamlit run Sherlock/demo.py
 ```
 
-Additional instructinos to use the interface can be found in the application.
+Additional instructions to use the interface can be found in the application.

@@ -6,7 +6,7 @@ import tensorflow as tf
 from math import ceil
 
 
-def build_dataset(ds, image_shape, rotate, batch_size, epochs, shuffle, take):
+def build_dataset(ds, image_shape, rotate, batch_size, epochs):
 	def _preprocess_input(data):
 		image = tf.io.read_file(data["image_path"])
 		image = tf.io.decode_jpeg(image)
@@ -37,50 +37,27 @@ def build_dataset(ds, image_shape, rotate, batch_size, epochs, shuffle, take):
 		return image, label
 
 	ds = ds.map(_preprocess_input)
-	ds = ds.take(take).batch(batch_size).repeat(epochs).prefetch(tf.data.experimental.AUTOTUNE)
+	ds = ds.shuffle(2048).batch(batch_size).repeat(epochs).prefetch(tf.data.experimental.AUTOTUNE)
 	if rotate:
 		ds = ds.map(_rebatch)
 	return ds
 
 
-def build_food101_dataset(split="train", image_shape=(224, 224), rotate=False, batch_size=16, epochs=None, shuffle=True, take=1):
-	data_dir = "data/raw/food-101/"
-	data_file = os.path.join(data_dir, "meta/{}.txt".format(split))
-	labels_file = os.path.join(data_dir, "meta/classes.txt")
-
-	df = pd.read_csv(data_file.format(split), names=["str_label", "id"], sep="/")
-	df["image_path"] = df[['str_label', 'id']].apply(lambda x: os.path.join(data_dir, 'images/{}/{}.jpg'.format(x[0],x[1])), axis=1)
-
-	classes = pd.read_csv(labels_file, header=None)
-	classes = { classes.iloc[i][0]: i for i in range(len(classes)) }
-	df["label"] = df[["str_label"]].apply(lambda x: classes[x[0]], axis=1)
-
-	assert 0 < take <= 1
-	take = round(len(df)*take)
-	info = {"length": ceil(take/batch_size)}
-
-	if shuffle:
-		df = df.sample(frac=1).reset_index(drop=True)
-
-	ds = tf.data.Dataset.from_tensor_slices(dict(df[["image_path", "label"]]))
-	ds = build_dataset(ds, image_shape, rotate, batch_size, epochs, shuffle, take)
-	return ds, info
-
-
-def build_yelp_dataset(split="train", image_shape=(224, 224), rotate=False, batch_size=16, epochs=None, shuffle=True, take=1):
+def build_yelp_dataset(split="train", image_shape=(224, 224), rotate=False, batch_size=16, epochs=None, take_per_class=None):
 	data_file = "data/preprocessed/yelp_photos_{}.json".format(split)
 
 	df = pd.read_json(data_file)
-	
-	assert 0 < take <= 1
-	take = round(len(df)*take)
-	info = {"length": ceil(take/batch_size)}
+	df = df.sample(frac=1).reset_index(drop=True)
 
-	if shuffle:
-		df = df.sample(frac=1).reset_index(drop=True)
+	if take_per_class:
+		df = df.groupby("label").head(take_per_class)
+	
+	n_classes = df["label"].max()+1
+	length = ceil(len(df)/batch_size)
+	info = {"length": length, "classes": n_classes}
 
 	ds = tf.data.Dataset.from_tensor_slices(dict(df[["image_path", "label"]]))
-	ds = build_dataset(ds, image_shape, rotate, batch_size, epochs, shuffle, take)
+	ds = build_dataset(ds, image_shape, rotate, batch_size, epochs)
 
 	return ds, info
 
