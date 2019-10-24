@@ -1,6 +1,10 @@
 # Sherlock: Semi-supervised Image Labeling
 Sherlock is a set of tools that leverage unsupervised learning techniques to make image labeling more efficient. Currently it contains an implementation pipeline of [RotNet](https://arxiv.org/pdf/1803.07728.pdf) as well as an interface that utilizes K-Means to cluster and visualize images for batch labeling of data. The experiments for this project were done primarily with the Yelp photos dataset (installation instructions below).
 
+<p align="center">
+  <img src="sherlock_demo.gif">
+</p>
+
 The presentation slides to the project are available [here](bit.ly/sherlock-ml).
 
 ## Prerequisites
